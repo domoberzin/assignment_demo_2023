@@ -48,6 +48,7 @@ func sendMessage(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
 		return
 	}
+
 	resp, err := cli.Send(ctx, &rpc.SendRequest{
 		Message: &rpc.Message{
 			Chat:   req.Chat,
@@ -56,11 +57,11 @@ func sendMessage(ctx context.Context, c *app.RequestContext) {
 		},
 	})
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
+		c.String(consts.StatusInternalServerError, resp.Msg)
 	} else if resp.Code != 0 {
 		c.String(consts.StatusInternalServerError, resp.Msg)
 	} else {
-		c.Status(consts.StatusOK)
+		c.String(consts.StatusOK, resp.Msg)
 	}
 }
 
@@ -73,11 +74,12 @@ func pullMessage(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := cli.Pull(ctx, &rpc.PullRequest{
-		Chat:    req.Chat,
+		Chat:    c.Query("chat"),
 		Cursor:  req.Cursor,
 		Limit:   req.Limit,
 		Reverse: &req.Reverse,
 	})
+
 	if err != nil {
 		c.String(consts.StatusInternalServerError, err.Error())
 		return
