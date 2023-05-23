@@ -2,6 +2,8 @@ version: '3.9'
 services:
   rpc-server:
     build: rpc-server
+    volumes:
+      - ./rpc-server/:/app
     ports:
       - "8888:8888"
     environment:
@@ -11,6 +13,8 @@ services:
       - etcd
   http-server:
     build: http-server
+    volumes:
+      - ./http-server/:/app
     ports:
       - "8080:8080"
     environment:
