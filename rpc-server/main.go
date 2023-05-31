@@ -9,7 +9,20 @@ import (
 	etcd "github.com/kitex-contrib/registry-etcd"
 )
 
+var (
+	db = &RedisClient{}
+)
+
 func main() {
+
+
+	err := db.NewRedisClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+
 	r, err := etcd.NewEtcdRegistry([]string{"etcd:2379"}) // r should not be reused.
 	if err != nil {
 		log.Fatal(err)
