@@ -50,8 +50,11 @@ func (s *IMServiceImpl) Pull(ctx context.Context, req *rpc.PullRequest) (*rpc.Pu
 		return nil, err
 	}
 
+	cursor := req.GetCursor()
+	end := cursor + int64(req.GetLimit())
+	reverse := req.GetReverse()
 
-	messages, err := db.GetMessages(ctx, roomID)
+	messages, hasMore, nextCursor, err := db.GetMessages(ctx, roomID, reverse, cursor, end, int64(req.GetLimit()))
 
 	finalMessages := make([]*rpc.Message, 0)
 
@@ -72,6 +75,8 @@ func (s *IMServiceImpl) Pull(ctx context.Context, req *rpc.PullRequest) (*rpc.Pu
 
 	resp := rpc.NewPullResponse()
 	resp.Messages = finalMessages
+	resp.HasMore = hasMore
+	resp.NextCursor = nextCursor
 	resp.Code, resp.Msg = 0, "success"
 	return resp, nil
 }

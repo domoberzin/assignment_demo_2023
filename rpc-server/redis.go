@@ -43,28 +43,53 @@ func (r *RedisClient) SaveMessage(ctx context.Context, roomID string, message *M
 	return r.client.ZAdd(context.Background(), key, member).Err()
 }
 
-func (r *RedisClient) GetMessages(ctx context.Context, roomID string) ([]* Message, error) {
+func (r *RedisClient) GetMessages(ctx context.Context, roomID string, reverse bool, cursor int64, end int64, limit int64) ([]* Message, *bool, *int64, error) {
 
 	var messages []*Message
-
+	var members []string
+	var err error
 
 	key := roomID
 
-	members, err := r.client.ZRevRange(context.Background(), key, 0, -1).Result()
+	hasMore := false
+	nextCursor := int64(0)
+	
+	var pHasMore *bool = &hasMore
+	var pNextCursor *int64 = &nextCursor
 
-	if err != nil {
-		return nil, err
+	if reverse {
+		members, err = r.client.ZRevRange(context.Background(), key, cursor, end).Result()
+		if err != nil {
+			return nil, pHasMore, pNextCursor, err
+		}
+	} else {
+		members, err = r.client.ZRange(context.Background(), key, cursor, end).Result()
+		if err != nil {
+			return nil, pHasMore, pNextCursor, err
+		}
 	}
 
+
+
+	// check number of messages, and return boolean for hasMore, as well as the next cursor
+
+	counter := int64(0)
+
 	for _, member := range members {
+		if (counter >= limit) {
+			hasMore = true
+			nextCursor = end
+			break
+		}
 		var message Message
 		err := json.Unmarshal([]byte(member), &message)
 		if err != nil {
-			return nil, err
+			return nil, pHasMore, pNextCursor, err
 		}
 		messages = append(messages, &message)
+		counter += 1
 	}
-
-	return messages, nil
+	
+	return messages, pHasMore, pNextCursor, nil
 }
 
